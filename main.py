@@ -431,7 +431,7 @@ if optimizer is None:
         optimizer = getattr(optim, args.optim)(model.parameters(), lr=lr, momentum=0.9, weight_decay=args.wdecay)
         
 
-all__losses = []
+all_test_losses = []
 epochs = args.epochs
 
 best_acc1 = 0.0

@@ -76,27 +76,9 @@ def data_generator(dataset, batch_size, dataroot, shuffle=True):
         n_classes = 20
         seq_length = 100
         input_channels = 700
-        
-    elif dataset == 'MNIST-10':
-        train_set = datasets.MNIST(root=dataroot, train=True, download=True,
-                                   transform=transforms.Compose([
-                                       transforms.ToTensor()
-                                   ]))
-        test_set = datasets.MNIST(root=dataroot, train=False, download=True,
-                                  transform=transforms.Compose([
-                                      transforms.ToTensor()
-                                  ]))
-
-        train_set = train_set
-
-        train_loader = torch.utils.data.DataLoader(train_set, shuffle=shuffle, batch_size=batch_size)
-        test_loader = torch.utils.data.DataLoader(test_set, shuffle=False, batch_size=batch_size)
-        n_classes = 10
-        seq_length = 28*28
-        input_channels = 1 
 
     else:
-        print('Please provide a valid dataset name.')
+        print('Dataset not included! Use a different dataset.')
         exit(1)
     return train_loader, test_loader, seq_length, input_channels, n_classes
 
@@ -349,9 +331,9 @@ parser.add_argument('--load', type=str, default='',
 parser.add_argument('--save', type=str, default='./models/',
                     help='path to load the model')
 
-parser.add_argument('--per_ex_stats', action='store_true',
+parser.add_argument('--per_ex_stats', action='store_false',
                     help='Use per example stats to compute the KL loss (default: False)')
-parser.add_argument('--dataset', type=str, default='MNIST-10',
+parser.add_argument('--dataset', type=str, default='SHD',
                     help='dataset to use')
 parser.add_argument('--dataroot', type=str, 
                     default='./data/',
@@ -394,7 +376,7 @@ if torch.cuda.is_available():
 
 
 steps = 0
-if args.dataset in ['CIFAR-10', 'MNIST-10', 'SHD']:
+if args.dataset in ['SHD']:
     train_loader, test_loader, seq_length, input_channels, n_classes = data_generator(args.dataset, 
                                                                      batch_size=args.batch_size,
                                                                      dataroot=args.dataroot, 
@@ -439,14 +421,9 @@ best_val_loss = None
 first_update = False
 named_params = get_stats_named_params(model)
 
-# k =5
-# python train_mnist_snn.py --dataset MNIST-10 --parts 784 --batch_size 256 --nhid 512 --alpha 0.5 --optim Adamax --lr 5e-3 --beta 0.5
-# python train_mnist_snn.py --dataset MNIST-10 --parts 784 --batch_size 128 --nhid 512 --alpha 0.5 --optim Adam --lr 1e-3 --beta 0.1 --load ./models/MNIST-10-nhid-512-parts-784-optim-Adamax-B-256-E-200-K-1-alpha-0.5-beta-0.5_snn_model_sota_best1.pth.tar
-
-
 for epoch in range(1, epochs + 1):
     print('Epoch ', epoch)
-    if args.dataset in ['MNIST-10', 'SHD']:
+    if args.dataset in ['SHD']:
         if args.per_ex_stats and epoch%5 == 1 :
             first_update = update_prob_estimates( model, args, train_loader, estimatedDistribution, estimate_class_distribution, first_update )
             

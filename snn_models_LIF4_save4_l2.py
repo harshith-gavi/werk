@@ -145,8 +145,7 @@ class ActFun_adp(torch.autograd.Function):
 act_fun_adp = ActFun_adp.apply
 
 def mem_update_adp(inputs, mem, spike, tau_adp,tau_m, b, dt=1, isAdapt=1):
-    alpha = tau_m
-    
+    alpha = tau_m    
     ro = tau_adp
 
     if isAdapt:
@@ -306,32 +305,23 @@ class SNN(nn.Module):
             # x = inputs[:,0,i].view(b,1)
             
             
-            dense_x = self.bn1a(self.layer1_x(x),i)+self.bn1b(self.layer1_r(h[1]),i)
-           
-
-            tauM1 = self.act1m(self.layer1_tauM(torch.cat((dense_x, h[0]),dim=-1)))
-            tauAdp1 = self.act1a(self.layer1_tauAdp(torch.cat((dense_x, h[2]),dim=-1)))
-        
-            mem_1,spk_1,_,b_1 = mem_update_adp(dense_x, mem=h[0],spike=h[1],
-                                            tau_adp=tauAdp1,tau_m=tauM1,b = h[2])
-
-            dense_x2 = self.bn2a(self.layer2_x(spk_1),i)+self.bn2b(self.layer2_r(h[1]),i)
-           
-
-            tauM2 = self.act2m(self.layer2_tauM(torch.cat((dense_x2, h[3]),dim=-1)))
-            tauAdp2 = self.act2a(self.layer2_tauAdp(torch.cat((dense_x2, h[5]),dim=-1)))
-        
-            mem_2,spk_2,_,b_2 = mem_update_adp(dense_x2, mem=h[3],spike=h[4],
-                                            tau_adp=tauAdp2,tau_m=tauM2,b = h[5])
-
+            dense_x = self.bn1a(self.layer1_x(x), i) + self.bn1b(self.layer1_r(h[1]), i)
+            tauM1 = self.act1m(self.layer1_tauM(torch.cat((dense_x, h[0]), dim = -1)))
+            tauAdp1 = self.act1a(self.layer1_tauAdp(torch.cat((dense_x, h[2]), dim = -1)))        
+            mem_1, spk_1, _, b_1 = mem_update_adp(dense_x, mem = h[0], spike = h[1], tau_adp = tauAdp1, tau_m = tauM1, b = h[2])
 
             
-            dense3_x = self.layer3_x(spk_2)
-            dense3_x = self.bn2(dense3_x,i)
-            tauM2 = self.act3(self.layer3_tauM(torch.cat((dense3_x, h[6]),dim=-1)))
-            mem_3 = output_Neuron(dense3_x,mem=h[6],tau_m = tauM2)
+            dense_x2 = self.bn2a(self.layer2_x(spk_1), i) + self.bn2b(self.layer2_r(h[1]), i)
+            tauM2 = self.act2m(self.layer2_tauM(torch.cat((dense_x2, h[3]), dim = -1)))
+            tauAdp2 = self.act2a(self.layer2_tauAdp(torch.cat((dense_x2, h[5]), dim = -1)))  
+            mem_2, spk_2, _, b_2 = mem_update_adp(dense_x2, mem = h[3], spike = h[4], tau_adp = tauAdp2, tau_m = tauM2, b = h[5])
 
-            out =mem_3
+
+            dense3_x = self.bn2(self.layer3_x(spk_2), i)
+            tauM3 = self.act3(self.layer3_tauM(torch.cat((dense3_x, h[6]), dim = -1)))
+            mem_3 = output_Neuron(dense3_x, mem = h[6], tau_m = tauM3)
+
+            out = mem_3
 
             h = (mem_1,spk_1,b_1,
                 mem_2,spk_2,b_2, 

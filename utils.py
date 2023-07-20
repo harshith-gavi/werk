@@ -28,7 +28,7 @@ def update_prob_estimates( model, args, train_loader, estimatedDistribution, est
     for batch_idx, (data, target) in enumerate(train_loader):
         if args.cuda: data, target = data.cuda(), target.cuda()
         # data = data.view(-1, input_channels, seq_length)
-         data = data.to_dense()
+        data = data.to_dense()
         
         B = target.size()[0]
         step = model.network[0].step

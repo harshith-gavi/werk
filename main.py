@@ -425,7 +425,7 @@ first_update = False
 named_params = get_stats_named_params(model)
 
 for epoch in range(1, epochs + 1):
-    print('Epoch ', epoch)
+    print('Epoch', epoch)
     
     if args.dataset in ['SHD']:
         if args.per_ex_stats and epoch%5 == 1 :
@@ -438,8 +438,8 @@ for epoch in range(1, epochs + 1):
 
         reset_named_params(named_params, args)
 
-        print('TESTING...')
         test_loss, acc1 = test(model, train_loader)
+        print('Accuracy:', acc1)
       
         if epoch in args.when :
             # Scheduled learning rate decay

@@ -1,22 +1,22 @@
-import argparse
 import math
 import h5py
+import argparse
 from tqdm import tqdm
 
 import numpy as np
-import torch
-from torch import nn
-from torch.nn import init
-from torch.nn.parameter import Parameter
-import torch.nn.functional as F
-import torch.optim as optim
 import matplotlib.pyplot as plt
 
-from utils import update_prob_estimates
-from snn_models_LIF4_save4_l2 import * # 2 layers
-
-from torchvision import datasets, transforms
 import tonic
+import torch
+from torch import nn
+# from torch.nn import init
+# from torch.nn.parameter import Parameter
+import torch.nn.functional as F
+import torch.optim as optim
+
+
+from utils import *
+from snn_models_LIF4_save4_l2 import *
 
 def data_mod(X, y, batch_size, step_size, input_size, max_time, shuffle=False):
     '''

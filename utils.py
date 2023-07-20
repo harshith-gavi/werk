@@ -34,7 +34,7 @@ def update_prob_estimates( model, args, train_loader, estimatedDistribution, est
         step = model.network.step
         xdata = data.clone()
 
-        T = inputs.size()[0]
+        T = data.size()[0]
 
         for p in range(PARTS):
             x, start, end = get_xt(p, step, T, inputs)

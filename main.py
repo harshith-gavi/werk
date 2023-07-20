@@ -429,7 +429,7 @@ for epoch in range(1, epochs + 1):
         if args.per_ex_stats and epoch%5 == 1 :
             first_update = update_prob_estimates( model, args, train_loader, estimatedDistribution, estimate_class_distribution, first_update )
 
-        progress_bar = tqdm(total=len(train_loader), desc=f"Epoch {epoch}", ncols=80)
+        progress_bar = tqdm(total=len(train_loader), desc=f"Epoch {epoch}", ncols=15)
         train(epoch, args, train_loader, n_classes, model, named_params, k, progress_bar)  
         progress_bar.close()
         #train_oracle(epoch)
@@ -437,6 +437,7 @@ for epoch in range(1, epochs + 1):
         reset_named_params(named_params, args)
 
         test_loss, acc1 = test(model, train_loader)
+        print(test_loss)
         print('Accuracy:', acc1)
       
         if epoch in args.when :

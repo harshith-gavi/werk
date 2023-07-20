@@ -331,7 +331,7 @@ parser.add_argument('--load', type=str, default='',
 parser.add_argument('--save', type=str, default='./models/',
                     help='path to load the model')
 
-parser.add_argument('--per_ex_stats', action='store_false',
+parser.add_argument('--per_ex_stats', action='store_true',
                     help='Use per example stats to compute the KL loss (default: False)')
 parser.add_argument('--dataset', type=str, default='SHD',
                     help='dataset to use')

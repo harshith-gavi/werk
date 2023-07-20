@@ -137,7 +137,6 @@ def test(model, test_loader):
             outputs, hidden, recon_loss = model(data, hidden) 
 
             output = outputs[-1]
-            print('outputs shape:', len(outputs))
             test_loss += F.nll_loss(output, target, reduction='sum').data.item()
             print('test_loss:', test_loss)
             pred = output.data.max(1, keepdim=True)[1]

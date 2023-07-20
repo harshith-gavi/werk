@@ -1,6 +1,7 @@
 import argparse
 import math
 import h5py
+from tqdm import tqdm
 
 import numpy as np
 import torch
@@ -146,7 +147,7 @@ def test(model, test_loader):
     return test_loss, 100. * correct / len(test_loader)
 
 
-def train(epoch, args, train_loader, n_classes, model, named_params,k):
+def train(epoch, args, train_loader, n_classes, model, named_params, k, progress_bar):
     global steps
     global estimate_class_distribution
 
@@ -163,6 +164,7 @@ def train(epoch, args, train_loader, n_classes, model, named_params,k):
     
     T = seq_length
     #entropy = EntropyLoss()
+   
     for batch_idx, (data, target) in enumerate(train_loader):
         if args.cuda: data, target = data.cuda(), target.cuda()
         data = data.to_dense()
@@ -273,6 +275,7 @@ def train(epoch, args, train_loader, n_classes, model, named_params,k):
             total_regularizaton_loss = 0
             total_oracle_loss = 0
 
+        progress_bar.update(1)
     # print(model.network.layer1_x.weight.grad, model.network.tau_m_r1.grad)
     # print( model.network.tau_m_r1.grad)
 
@@ -423,20 +426,21 @@ named_params = get_stats_named_params(model)
 
 for epoch in range(1, epochs + 1):
     print('Epoch ', epoch)
+    
     if args.dataset in ['SHD']:
         if args.per_ex_stats and epoch%5 == 1 :
             first_update = update_prob_estimates( model, args, train_loader, estimatedDistribution, estimate_class_distribution, first_update )
-            
-        print('TRAINING...')
-        train(epoch, args, train_loader, n_classes, model, named_params,k)   
+
+        progress_bar = tqdm(total=len(train_loader), desc=f"Epoch {epoch}", ncols=80)
+        train(epoch, args, train_loader, n_classes, model, named_params, k, progress_bar)  
+        progress_bar.close()
         #train_oracle(epoch)
 
         reset_named_params(named_params, args)
 
         print('TESTING...')
-        test_loss, acc1 = test(model, test_loader)
+        test_loss, acc1 = test(model, train_loader)
       
-
         if epoch in args.when :
             # Scheduled learning rate decay
             lr *= 0.1

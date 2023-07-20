@@ -135,10 +135,14 @@ def test(model, test_loader):
             hidden = model.init_hidden(data.size(0))
             
             outputs, hidden, recon_loss = model(data, hidden) 
-            
+
+            print('outputs:': outputs)
             output = outputs[-1]
+            print('output:': output)
             test_loss += F.nll_loss(output, target, reduction='sum').data.item()
+            print('test_loss:', test_loss)
             pred = output.data.max(1, keepdim=True)[1]
+            print('pred:', pred)
         
         correct += pred.eq(target.data.view_as(pred)).cpu().sum()
 
@@ -429,7 +433,7 @@ for epoch in range(1, epochs + 1):
         if args.per_ex_stats and epoch%5 == 1 :
             first_update = update_prob_estimates( model, args, train_loader, estimatedDistribution, estimate_class_distribution, first_update )
 
-        progress_bar = tqdm(total=len(train_loader), desc=f"Epoch {epoch}", ncols=15)
+        progress_bar = tqdm(total=len(train_loader), desc=f"Epoch {epoch}")
         train(epoch, args, train_loader, n_classes, model, named_params, k, progress_bar)  
         progress_bar.close()
         #train_oracle(epoch)
@@ -437,7 +441,7 @@ for epoch in range(1, epochs + 1):
         reset_named_params(named_params, args)
 
         test_loss, acc1 = test(model, train_loader)
-        print(test_loss)
+        print('Model loss:', test_loss)
         print('Accuracy:', acc1)
       
         if epoch in args.when :

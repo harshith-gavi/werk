@@ -1,15 +1,6 @@
-import numpy as np
-import random
+import torch
 from torch import nn
 import torch.nn.functional as F
-
-def get_xt(p, step, T, inputs):
-    start = p*step
-    end = (p+1)*step
-    if (end >= T): end=T
-        
-    x = inputs[ start : end ]
-    return x, start, end
 
 class EntropyLoss(nn.Module):
     def __init__(self):
@@ -20,86 +11,62 @@ class EntropyLoss(nn.Module):
         b = -1.0 * b.sum()
         return b
 
-def update_prob_estimates( model, args, train_loader, estimatedDistribution, estimate_class_distribution, first_update=False ):
+def get_xt(p, step, T, inputs):
+    start = p * step
+    end = (p + 1) * step
+    if end >= T:
+        end = T
+
+    x = inputs[start:end]
+    return x, start, end
+
+def update_prob_estimates(model, args, train_loader, estimatedDistribution, estimate_class_distribution, first_update=False):
     PARTS = args.parts
     model.eval()
 
     print('Find current distribution for each image...')
+    batch_size = train_loader.batch_size
     for batch_idx, (data, target) in enumerate(train_loader):
-        if args.cuda: data, target = data.cuda(), target.cuda()
-        # data = data.view(-1, input_channels, seq_length)
-        data = data.to_dense()
+        if args.cuda:
+            data, target = data.cuda(), target.cuda()
         
         B = target.size()[0]
         step = model.network.step
-        xdata = data.clone()
-
+        xdata = data.to_dense()
         T = data.size()[0]
 
         for p in range(PARTS):
-            x, start, end = get_xt(p, step, T, inputs)
+            x, start, end = get_xt(p, step, T, data)
 
             with torch.no_grad():
-                if p==0:
+                if p == 0:
                     h = model.init_hidden(xdata.size(0))
                 else:
-                    #_, h = model.network[0].rnn( inputs[:end], h )
                     h = (h[0].detach(), h[1].detach())
 
-                o, h = model.network[0].rnn( x, h )
-                out = F.dropout(model.linear2(model.linear1( (h[0]) )), model.dropout)
+                o, h = model.network[0].rnn(x, h)
+                out = F.dropout(model.linear2(model.linear1((h[0]))), model.dropout)
                 out = out.squeeze(dim=0)
                 prob_out = F.softmax(out, dim=1)
 
-                if first_update==False:
-                    estimatedDistribution[batch_idx*batch_size:(batch_idx+1)*batch_size, p] = prob_out
+                if first_update == False:
+                    estimatedDistribution[batch_idx * batch_size: (batch_idx + 1) * batch_size, p] = prob_out
                 else:
-                    A = estimatedDistribution[batch_idx*batch_size:(batch_idx+1)*batch_size, p] 
+                    A = estimatedDistribution[batch_idx * batch_size: (batch_idx + 1) * batch_size, p]
                     B = prob_out
-                    estimatedDistribution[batch_idx*batch_size:(batch_idx+1)*batch_size, p] = 0.6*A + 0.4*B
-    
-    #estimate_class_distribution = torch.zeros(n_classes, PARTS, n_classes, dtype=torch.float)
-    
+                    estimatedDistribution[batch_idx * batch_size: (batch_idx + 1) * batch_size, p] = 0.6 * A + 0.4 * B
+
     print('Find best for each class...')
-    for batch_idx, (data, target) in enumerate(train_loader):            
-        j=0
-        for idx in range(batch_idx*batch_size, (batch_idx+1)*batch_size):
-            y = target[j].item()
-            
+    estimate_class_distribution_tensor = torch.tensor(estimate_class_distribution)
+    for batch_idx, (data, target) in enumerate(train_loader):
+        target_np = target.cpu().numpy()
+        for idx, y in enumerate(target_np):
             for p in range(PARTS):
-                current_distribution = estimatedDistribution[idx, p]
-                #print('y=', y, ' --> torch.argmax(current_distribution) ', torch.argmax(current_distribution))
-        
-                if torch.argmax(current_distribution) == target[j]:
-                    #print('estimate_class_distribution[y, p] = ', estimate_class_distribution[y, p].size())
-                    #print('current_distribution = ', current_distribution.size())
-                    if first_update==False:
-                        estimate_class_distribution[y, p] = current_distribution
-                    else:
-                        if random.randint(0, 8) == 2:
-                            estimate_class_distribution[y, p] = current_distribution
-                        #estimate_class_distribution[y, p] = 0.9* estimate_class_distribution[y, p] + 0.1*current_distribution
-                
-            j += 1
-            
-            
-    print('In the current example estimates replace where you have mistakes...')
-    for batch_idx, (data, target) in enumerate(train_loader):            
-        #if batch_idx%100==0:
-        #    print('batch .. ', batch_idx)
-        
-        j=0
-        for idx in range(batch_idx*batch_size, (batch_idx+1)*batch_size):
-            y = target[j].item()
-            
-            for p in range(PARTS):
-                current_distribution = estimatedDistribution[idx, p]
-                #print('y=', y, ' --> torch.argmax(current_distribution) ', torch.argmax(current_distribution))
-        
-                if torch.argmax(current_distribution) != target[j]:
-                    estimatedDistribution[idx, p] = estimate_class_distribution[y, p] 
-                
-            j += 1
-    
+                current_distribution = estimatedDistribution[batch_idx * batch_size + idx, p]
+                argmax_current_distribution = torch.argmax(current_distribution)
+
+                if argmax_current_distribution != y:
+                    estimatedDistribution[batch_idx * batch_size + idx, p] = estimate_class_distribution_tensor[y, p]
+
     first_update = True
     return first_update

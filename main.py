@@ -138,9 +138,8 @@ def test(model, test_loader):
 
             output = outputs[-1]
             test_loss += F.nll_loss(output, target, reduction='sum').data.item()
-            print('test_loss:', test_loss)
             pred = output.data.max(1, keepdim=True)[1]
-            print('pred:', pred)
+            print('pred:', pred.shape)
         
         correct += pred.eq(target.data.view_as(pred)).cpu().sum()
 

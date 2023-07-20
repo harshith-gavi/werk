@@ -309,8 +309,8 @@ parser.add_argument('--clip', type=float, default=1., #0.5,
 parser.add_argument('--epochs', type=int, default=100,
                     help='Number of Epochs')
 parser.add_argument('--parts', type=int, default=100,
-                    help='Parts to split the sequential input into (default: 10)')
-parser.add_argument('--batch_size', type=int, default=128, metavar='N',
+                    help='Parts to split the sequential input into (default: 100)')
+parser.add_argument('--batch_size', type=int, default=256, metavar='N',
                     help='batch size')
 parser.add_argument('--small_batch_size', type=int, default=-1, metavar='N',
                     help='batch size')

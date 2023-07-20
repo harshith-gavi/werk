@@ -306,8 +306,8 @@ parser.add_argument('--lr', type=float, default=5e-3,
 parser.add_argument('--clip', type=float, default=1., #0.5,
                     help='gradient clipping')
 
-parser.add_argument('--epochs', type=int, default=250,
-                    help='upper epoch limit (default: 200)')
+parser.add_argument('--epochs', type=int, default=100,
+                    help='Number of Epochs')
 parser.add_argument('--parts', type=int, default=100,
                     help='Parts to split the sequential input into (default: 10)')
 parser.add_argument('--batch_size', type=int, default=128, metavar='N',

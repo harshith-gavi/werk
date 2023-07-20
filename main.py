@@ -139,13 +139,12 @@ def test(model, test_loader):
             output = outputs[-1]
             test_loss += F.nll_loss(output, target, reduction='sum').data.item()
             pred = output.data.max(1, keepdim=True)[1]
-            print('pred:', pred.shape)
         
         correct += pred.eq(target.data.view_as(pred)).cpu().sum()
 
-    test_loss /= len(test_loader)
+    test_loss /= (len(test_loader) * data.shape[0])
     
-    return test_loss, 100. * correct / len(test_loader)
+    return test_loss, 100. * correct / (len(test_loader) * data.shape[0])
 
 
 def train(epoch, args, train_loader, n_classes, model, named_params, k, progress_bar):

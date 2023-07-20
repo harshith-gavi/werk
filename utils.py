@@ -25,7 +25,7 @@ def update_prob_estimates(model, args, train_loader, estimatedDistribution, esti
     model.eval()
 
     print('Find current distribution for each image...')
-    batch_size = train_loader.batch_size
+    batch_size = args.batch_size
     for batch_idx, (data, target) in enumerate(train_loader):
         if args.cuda:
             data, target = data.cuda(), target.cuda()

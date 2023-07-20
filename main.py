@@ -424,9 +424,7 @@ best_val_loss = None
 first_update = False
 named_params = get_stats_named_params(model)
 
-for epoch in range(1, epochs + 1):
-    print('Epoch', epoch)
-    
+for epoch in range(1, epochs + 1):  
     if args.dataset in ['SHD']:
         if args.per_ex_stats and epoch%5 == 1 :
             first_update = update_prob_estimates( model, args, train_loader, estimatedDistribution, estimate_class_distribution, first_update )

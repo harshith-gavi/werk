@@ -153,9 +153,10 @@ def test(model, test_loader):
     return test_loss, 100. * correct / (len(test_loader) * data.shape[0])
 
 
-def train(epoch, args, train_loader, n_classes, model, named_params, k, progress_bar, estimate_class_distribution):
+def train(epoch, args, train_loader, n_classes, model, named_params, k, progress_bar):
     global steps
-
+    global estimate_class_distribution
+    
     batch_size = args.batch_size
     alpha = args.alpha
     beta = args.beta
@@ -312,7 +313,7 @@ def main():
 
     print('PREPROCESSING DATA...')
     train_loader, test_loader, seq_length, input_channels, n_classes = data_generator(args.dataset, batch_size = args.batch_size, datapath = args.datapath, shuffle = (not args.per_ex_stats))
-    estimate_class_distribution = torch.zeros(n_classes, args.parts, n_classes, dtype=torch.float)
+    global estimate_class_distribution = torch.zeros(n_classes, args.parts, n_classes, dtype=torch.float)
     estimatedDistribution = None
     if args.per_ex_stats:
         estimatedDistribution = torch.zeros(len(train_loader)*args.batch_size, args.parts, n_classes, dtype=torch.float)
@@ -357,7 +358,7 @@ def main():
     
             progress_bar = tqdm(total=len(train_loader), desc=f"Epoch {epoch}")
             k = 1
-            train(epoch, args, train_loader, n_classes, model, named_params, k, progress_bar, estimate_class_distribution)  
+            train(epoch, args, train_loader, n_classes, model, named_params, k, progress_bar)  
             progress_bar.close()
             #train_oracle(epoch)
     

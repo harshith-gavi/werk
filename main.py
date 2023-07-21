@@ -330,7 +330,7 @@ def main():
 
     
     print('CREATING A MODEL...')
-    args.to(device_1)
+    args = args.to(device_1)
     model = SeqModel(ninp = input_channels,
                      nhid = args.nhid,
                      nout = n_classes,

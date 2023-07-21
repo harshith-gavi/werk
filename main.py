@@ -153,9 +153,8 @@ def test(model, test_loader):
     return test_loss, 100. * correct / (len(test_loader) * data.shape[0])
 
 
-def train(epoch, args, train_loader, n_classes, model, named_params, k, progress_bar):
+def train(epoch, args, train_loader, n_classes, model, named_params, k, progress_bar, estimate_class_distribution):
     global steps
-    global estimate_class_distribution
 
     batch_size = args.batch_size
     alpha = args.alpha
@@ -358,7 +357,7 @@ def main():
     
             progress_bar = tqdm(total=len(train_loader), desc=f"Epoch {epoch}")
             k = 1
-            train(epoch, args, train_loader, n_classes, model, named_params, k, progress_bar)  
+            train(epoch, args, train_loader, n_classes, model, named_params, k, progress_bar, estimate_class_distribution)  
             progress_bar.close()
             #train_oracle(epoch)
     

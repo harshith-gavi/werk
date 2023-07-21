@@ -102,7 +102,7 @@ def post_optimizer_updates( named_params, args, epoch ):
 def get_regularizer_named_params( named_params, args):
     alpha = args.alpha
     rho = args.rho
-    _lambda = args.lambda 
+    _lambda = args.lmda 
     regularization = torch.zeros([])
     for name in named_params:
         param, sm, lm, dm = named_params[name]
@@ -286,7 +286,7 @@ def main():
     parser.add_argument('--alpha', type=float, default=.1, help='Alpha')
     parser.add_argument('--beta', type=float, default=0.5, help='Beta')
     parser.add_argument('--rho', type=float, default=0.0, help='Rho')
-    parser.add_argument('--lambda', type=float, default=1.0, help='Lambda')
+    parser.add_argument('--lmda', type=float, default=1.0, help='Lambda')
                         
     parser.add_argument('--seed', type=int, default=1111, help='Random seed')
     parser.add_argument('--load', type=str, default='', help='Path to load the model')

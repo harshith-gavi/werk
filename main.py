@@ -302,7 +302,7 @@ def main():
 
     print('PARSING ARGUMENTS...')           
     args = parser.parse_args()
-    # args.cuda = True
+    args.cuda = True
     
     exp_name = 'optim-' + args.optim + '-B-' + str(args.batch_size) + '-alpha-' + str(args.alpha) + '-beta-' + str(args.beta)
     if args.per_ex_stats: exp_name += '-per-ex-stats-'    
@@ -330,7 +330,7 @@ def main():
 
     
     print('CREATING A MODEL...')
-    args = args.to(device_1)
+    args
     model = SeqModel(ninp = input_channels,
                      nhid = args.nhid,
                      nout = n_classes,

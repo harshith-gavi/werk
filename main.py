@@ -9,13 +9,19 @@ import matplotlib.pyplot as plt
 import tonic
 import torch
 from torch import nn
-# from torch.nn import init
-# from torch.nn.parameter import Parameter
 import torch.nn.functional as F
 import torch.optim as optim
 
 from utils import *
 from snn_models_LIF4_save4_l2 import *
+
+if torch.cuda.is_available():
+    print('Using CUDA...')
+    torch.backends.cudnn.benchmark = True
+    device_0 = torch.device('cpu')
+    device_1 = torch.device('cuda:0')
+    device_2 = torch.device('cuda:1')
+    torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 def data_mod(X, y, batch_size, step_size, input_size, max_time, shuffle=False):
     '''
@@ -303,16 +309,16 @@ def main():
     print('args.per_ex_stats: ', args.per_ex_stats)
     prefix = args.save + exp_name
 
-    if torch.cuda.is_available():
-        print('Using CUDA...')
-        torch.backends.cudnn.benchmark = True
-        device_0 = torch.device('cpu')
-        device_1 = torch.device('cuda:0')
-        device_2 = torch.device('cuda:1')
-        torch.set_default_tensor_type('torch.cuda.FloatTensor')
-        torch.cuda.manual_seed(args.seed)
-    else:
-        print('Use to CUDA device to avoid errors.')
+    # if torch.cuda.is_available():
+    #     print('Using CUDA...')
+    #     torch.backends.cudnn.benchmark = True
+    #     device_0 = torch.device('cpu')
+    #     device_1 = torch.device('cuda:0')
+    #     device_2 = torch.device('cuda:1')
+    #     torch.set_default_tensor_type('torch.cuda.FloatTensor')
+    torch.cuda.manual_seed(args.seed)
+    # else:
+    #     print('Use to CUDA device to avoid errors.')
 
     
     print('PREPROCESSING DATA...')

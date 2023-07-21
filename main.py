@@ -168,7 +168,7 @@ def train(epoch, args, train_loader, n_classes, model, named_params, k, progress
     total_oracle_loss = 0
     model.train()
     
-    T = seq_length
+    # T = seq_length
     #entropy = EntropyLoss()
    
     for batch_idx, (data, target) in enumerate(train_loader):

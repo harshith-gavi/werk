@@ -283,7 +283,7 @@ def main():
     parser.add_argument('--parts', type=int, default=100, help='Parts to split the sequential input into')
 
     parser.add_argument('--nlayers', type=int, default=2, help='Number of layers')
-    parser.add_argument('--nhid', nargs='+', type=int, default=[256, 256], help='Number of Hidden units')
+    parser.add_argument('--nhid', type=int, default=256, help='Number of Hidden units')
     parser.add_argument('--epochs', type=int, default=100, help='Number of Epochs')
     parser.add_argument('--lr', type=float, default=5e-3, help='Learning rate')
     parser.add_argument('--when', nargs='+', type=int, default=[25, 50, 75], help='Epochs where Learning rate decays')
@@ -304,7 +304,6 @@ def main():
 
     print('PARSING ARGUMENTS...')           
     args = parser.parse_args()
-    args.cuda = True
     
     exp_name = 'optim-' + args.optim + '-B-' + str(args.batch_size) + '-alpha-' + str(args.alpha) + '-beta-' + str(args.beta)
     if args.per_ex_stats: exp_name += '-per-ex-stats-'    

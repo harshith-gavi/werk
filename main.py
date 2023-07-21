@@ -313,7 +313,8 @@ def main():
 
     print('PREPROCESSING DATA...')
     train_loader, test_loader, seq_length, input_channels, n_classes = data_generator(args.dataset, batch_size = args.batch_size, datapath = args.datapath, shuffle = (not args.per_ex_stats))
-    global estimate_class_distribution = torch.zeros(n_classes, args.parts, n_classes, dtype=torch.float)
+    global estimate_class_distribution
+    estimate_class_distribution = torch.zeros(n_classes, args.parts, n_classes, dtype=torch.float)
     estimatedDistribution = None
     if args.per_ex_stats:
         estimatedDistribution = torch.zeros(len(train_loader)*args.batch_size, args.parts, n_classes, dtype=torch.float)

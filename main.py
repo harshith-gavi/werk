@@ -156,6 +156,7 @@ def test(model, test_loader):
 def train(epoch, args, train_loader, n_classes, model, named_params, k, progress_bar):
     global steps
     global estimate_class_distribution
+    global optimizer
 
     # estimate_class_distribution.to(device_1)
     batch_size = args.batch_size
@@ -337,7 +338,7 @@ def main():
     #     model.load_state_dict(model_ckp['state_dict'])
     #     print('best acc of loaded model: ',model_ckp['best_acc'])
 
-    
+    global optimizer
     optimizer = None
     if optimizer is None:
         optimizer = getattr(optim, args.optim)(model.parameters(), lr=args.lr, weight_decay=args.wdecay)

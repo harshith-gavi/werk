@@ -330,7 +330,7 @@ def main():
                      wnorm = args.wnorm,
                      n_timesteps = seq_length, 
                      parts = args.parts) 
-    model.to(device_1)
+    model = nn.DataParallel(model, device_ids=[0, 1])
     print('Model: ', model)
 
     # if len(args.load) > 0:

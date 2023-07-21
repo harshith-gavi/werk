@@ -14,7 +14,6 @@ from torch import nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-
 from utils import *
 from snn_models_LIF4_save4_l2 import *
 
@@ -50,27 +49,25 @@ def data_mod(X, y, batch_size, step_size, input_size, max_time, shuffle=False):
             coo[2].extend(units)
             coo[1].extend(times)
 
-        i = torch.LongTensor(coo).to(device_2)
-        v = torch.FloatTensor(np.ones(len(coo[0]))).to(device_2)
+        i = torch.LongTensor(coo).to(device_0)
+        v = torch.FloatTensor(np.ones(len(coo[0]))).to(device_0)
 
-        X_batch = torch.sparse.FloatTensor(i, v, torch.Size([batch_size,step_size,input_size])).to(device_2)
-        y_batch = torch.tensor(labels[batch_index], device = device_2)
+        X_batch = torch.sparse.FloatTensor(i, v, torch.Size([batch_size,step_size,input_size])).to(device_0)
+        y_batch = torch.tensor(labels[batch_index], device = device_0)
 
-        mod_data.append((X_batch.to(device_2), y_batch.to(device_2)))
+        mod_data.append((X_batch.to(device_0), y_batch.to(device_0)))
 
         counter += 1
 
     return mod_data
 
-def data_generator(dataset, batch_size, dataroot, shuffle=True):
-    datapath = '../data/'
-
+def data_generator(dataset, batch_size, datapath, shuffle=True):
     if dataset == 'SHD':
         shd_train = h5py.File(datapath + 'train_data/SHD/shd_train.h5', 'r')
         shd_test = h5py.File(datapath + 'test_data/SHD/shd_test.h5', 'r')
 
-        shd_train = data_mod(shd_train['spikes'], shd_train['labels'], batch_size = batch_size, step_size = 100, input_size = 700, max_time = 1.37)
-        shd_test = data_mod(shd_test['spikes'], shd_test['labels'], batch_size = 1, step_size = 100, input_size = 700, max_time = 1.37)
+        shd_train = data_mod(shd_train['spikes'], shd_train['labels'], batch_size = batch_size, step_size = 100, input_size = 700, max_time = 1.37, shuffle)
+        shd_test = data_mod(shd_test['spikes'], shd_test['labels'], batch_size = 1, step_size = 100, input_size = 700, max_time = 1.37, shuffle)
         
         train_loader = shd_train
         test_loader = shd_test
@@ -81,6 +78,7 @@ def data_generator(dataset, batch_size, dataroot, shuffle=True):
     else:
         print('Dataset not included! Use a different dataset.')
         exit(1)
+
     return train_loader, test_loader, seq_length, input_channels, n_classes
 
 def get_stats_named_params( model ):
@@ -101,16 +99,16 @@ def post_optimizer_updates( named_params, args, epoch ):
         sm.data.mul_( (1.0-beta) )
         sm.data.add_( beta * param - (beta/alpha) * lm )
 
-def get_regularizer_named_params( named_params, args, _lambda=1.0 ):
+def get_regularizer_named_params( named_params, args):
     alpha = args.alpha
     rho = args.rho
-    regularization = torch.zeros( [], device=args.device )
+    _lambda = args.lambda 
+    regularization = torch.zeros([])
     for name in named_params:
         param, sm, lm, dm = named_params[name]
         regularization += (rho-1.) * torch.sum( param * lm )
         r_p = _lambda * 0.5 * alpha * torch.sum( torch.square(param - sm) )
         regularization += r_p
-            # print(name,r_p)
     return regularization 
 
 def reset_named_params(named_params, args):
@@ -177,7 +175,7 @@ def train(epoch, args, train_loader, n_classes, model, named_params, k, progress
         
         # T = inputs.size()[0]
  
-        Delta = torch.zeros(B, dtype=xdata.dtype, device=xdata.device)
+        # Delta = torch.zeros(B, dtype=xdata.dtype, device=xdata.device)
         
         _PARTS = PARTS
         # if (PARTS * step < T):
@@ -242,17 +240,15 @@ def train(epoch, args, train_loader, n_classes, model, named_params, k, progress
                 clf_loss = (p+1)/(_PARTS)*nll_loss#*data[:,0,:p].sum(-1).gt(1.)
                 clf_loss = clf_loss.mean()
                 # clf_loss = (p+1)/(_PARTS)*F.cross_entropy(output, target)
-                # oracle_loss = (1 - (p+1)/(_PARTS)) * 1.0 *torch.mean( -oracle_prob * output )
                 oracle_loss = (1-(p+1)/(_PARTS)) * 1.0 *torch.mean( -oracle_prob * output)
                     
-                regularizer = get_regularizer_named_params( named_params, args, _lambda=1.0 ) 
+                regularizer = get_regularizer_named_params(named_params, args) 
                 # if p>600:     
                 #     loss = clf_loss + regularizer  + oracle_loss#+ model.network.fr*0.5
                 # else:
                 #     loss = clf_loss + regularizer 
-                loss = clf_loss + regularizer + oracle_loss#
+                loss = clf_loss + regularizer + oracle_loss
    
-                # loss.backward(retain_graph=True)
                 loss.backward()
 
                 if args.clip > 0:
@@ -267,197 +263,136 @@ def train(epoch, args, train_loader, n_classes, model, named_params, k, progress
                 total_oracle_loss += oracle_loss.item()
         
         steps += seq_length
-        if batch_idx > 0 and batch_idx % args.log_interval == 0:
-            
-            # print(model.network.fr)
-            train_loss = 0
-            total_clf_loss = 0
-            total_regularizaton_loss = 0
-            total_oracle_loss = 0
 
         progress_bar.update(1)
-    # print(model.network.layer1_x.weight.grad, model.network.tau_m_r1.grad)
-    # print( model.network.tau_m_r1.grad)
 
-parser = argparse.ArgumentParser(description='Sequential Decision Making..')
+def main():
+    parser = argparse.ArgumentParser()
 
-parser.add_argument('--alpha', type=float, default=.1, help='Alpha')
-parser.add_argument('--beta', type=float, default=0.5, help='Beta')
-parser.add_argument('--rho', type=float, default=0.0, help='Rho')
-parser.add_argument('--lmbda', type=float, default=2.0, help='Lambda')
+    parser.add_argument('--dataset', type=str, default='SHD', help='Dataset')
+    parser.add_argument('--datapath', type=str, default= '../data/', help='path to the dataset')
+    parser.add_argument('--batch_size', type=int, default=256, metavar='N', help='Batch size')
+    parser.add_argument('--parts', type=int, default=100, help='Parts to split the sequential input into')
 
-parser.add_argument('--model', type=str, default='LSTM', help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU)')
-parser.add_argument('--emsize', type=int, default=256, help='size of word embeddings')
-parser.add_argument('--nlayers', type=int, default= 2,
-                    help='number of layers')
-parser.add_argument('--bptt', type=int, default=300, #35,
-                    help='sequence length')
-parser.add_argument('--tied', action='store_true',
-                    help='tie the word embedding and softmax weights')
-
-parser.add_argument('--n_experts', type=int, default=15,
-                    help='PTB-Word n_experts')
-parser.add_argument('--nhid', type=int, default=256,
-                    help='number of hidden units per layer')
-parser.add_argument('--nhidlast', type=int, default=620,
-                    help='number of hidden units per layer')
-parser.add_argument('--lr', type=float, default=5e-3,
-                    help='initial learning rate (default: 4e-3)')
-parser.add_argument('--clip', type=float, default=1., #0.5,
-                    help='gradient clipping')
-
-parser.add_argument('--epochs', type=int, default=100,
-                    help='Number of Epochs')
-parser.add_argument('--parts', type=int, default=100,
-                    help='Parts to split the sequential input into (default: 100)')
-parser.add_argument('--batch_size', type=int, default=256, metavar='N',
-                    help='batch size')
-parser.add_argument('--small_batch_size', type=int, default=-1, metavar='N',
-                    help='batch size')
-parser.add_argument('--eval_batch_size', type=int, default=10, metavar='N',
-                    help='batch size')
-
-parser.add_argument('--wnorm', action='store_false',
-                    help='use weight normalization (default: True)')
-parser.add_argument('--wdecay', type=float, default=0.,
-                    help='weight decay')
-parser.add_argument('--seed', type=int, default=1111,
-                    help='random seed')
-parser.add_argument('--log-interval', type=int, default=100, metavar='N',
-                    help='report interval')
-parser.add_argument('--optim', type=str, default='Adam',
-                    help='optimizer to use')
-parser.add_argument('--when', nargs='+', type=int, default=[10,30,50,75,90],#[30,70,120],#[10,20,50, 75, 90],
-                    help='When to decay the learning rate')
-parser.add_argument('--load', type=str, default='',
-                    help='path to load the model')
-parser.add_argument('--save', type=str, default='./models/',
-                    help='path to load the model')
-
-parser.add_argument('--per_ex_stats', action='store_true',
-                    help='Use per example stats to compute the KL loss (default: False)')
-parser.add_argument('--dataset', type=str, default='SHD',
-                    help='dataset to use')
-parser.add_argument('--dataroot', type=str, 
-                    default='./data/',
-                    help='root location of the dataset')
-args = parser.parse_args()
+    parser.add_argument('--nlayers', type=int, default=2, help='Number of layers')
+    parser.add_argument('--nhid', nargs='+', type=int, default=[256, 256], help='Number of Hidden units')
+    parser.add_argument('--epochs', type=int, default=100, help='Number of Epochs')
+    parser.add_argument('--lr', type=float, default=5e-3, help='Learning rate')
+    parser.add_argument('--when', nargs='+', type=int, default=[25, 50, 75], help='Epochs where Learning rate decays')
+    parser.add_argument('--optim', type=str, default='Adam', help='Optimiser')
+    parser.add_argument('--wnorm', action='store_false', help='Weight normalization (default: True)')
+    parser.add_argument('--wdecay', type=float, default=0., help='Weight decay')
+    parser.add_argument('--clip', type=float, default=1., #0.5, help='Gradient Clipping')
+    parser.add_argument('--alpha', type=float, default=.1, help='Alpha')
+    parser.add_argument('--beta', type=float, default=0.5, help='Beta')
+    parser.add_argument('--rho', type=float, default=0.0, help='Rho')
+    parser.add_argument('--lambda', type=float, default=1.0, help='Lambda')
+                        
+    parser.add_argument('--seed', type=int, default=1111, help='Random seed')
+    parser.add_argument('--load', type=str, default='', help='Path to load the model')
+    parser.add_argument('--save', type=str, default='./models/', help='Path to save the model')
+    parser.add_argument('--per_ex_stats', action='store_true', help='Use per example stats to compute the KL loss (default: False)')
 
 
-args.cuda = True
+    print('PARSING ARGUMENTS...')           
+    args = parser.parse_args()
+    # args.cuda = True
+    
+    exp_name = 'optim-' + args.optim + '-B-' + str(args.batch_size) + '-alpha-' + str(args.alpha) + '-beta-' + str(args.beta)
+    if args.per_ex_stats: exp_name += '-per-ex-stats-'    
+    print('args.per_ex_stats: ', args.per_ex_stats)
+    prefix = args.save + exp_name
 
-k = 1
+    if torch.cuda.is_available():
+        print('Using CUDA...')
+        torch.backends.cudnn.benchmark = True
+        device_0 = torch.device('cpu')
+        device_1 = torch.device('cuda:0')
+        device_2 = torch.device('cuda:1')
+        torch.set_default_tensor_type('torch.cuda.FloatTensor')
+        torch.cuda.manual_seed(args.seed)
+    else:
+        print('Use to CUDA device to avoid errors.')
 
-
-exp_name = args.dataset + '-nhid-' + str(args.nhid) + '-parts-' + str(args.parts) + '-optim-' + args.optim
-exp_name += '-B-' + str(args.batch_size) + '-E-' + str(args.epochs)
-exp_name += '-alpha-' + str(args.alpha) + '-beta-' + str(args.beta) + '-k-' + str(k) + '-V2'
-# exp_name += 
-
-if args.per_ex_stats:
-    exp_name += '-per-ex-stats-'
-
-print('args.per_ex_stats: ', args.per_ex_stats)
-prefix = args.save + exp_name
-
-
-torch.backends.cudnn.benchmark = True
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-device_0 = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-device_1 = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-device_2 = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-device_3 = torch.device('cpu')
-args.device = device
-
-# Set the random seed manually for reproducibility.
-torch.manual_seed(args.seed)
-torch.set_default_tensor_type('torch.FloatTensor')
-if torch.cuda.is_available():
-    torch.set_default_tensor_type('torch.cuda.FloatTensor')
-    torch.cuda.manual_seed(args.seed)
-
-
-
-steps = 0
-if args.dataset in ['SHD']:
-    train_loader, test_loader, seq_length, input_channels, n_classes = data_generator(args.dataset, 
-                                                                     batch_size=args.batch_size,
-                                                                     dataroot=args.dataroot, 
-                                                                     shuffle=(not args.per_ex_stats))
+    
+    print('PREPROCESSING DATA...')
+    train_loader, test_loader, seq_length, input_channels, n_classes = data_generator(args.dataset, batch_size = args.batch_size, datapath = args.datapath, shuffle = (not args.per_ex_stats))
     estimate_class_distribution = torch.zeros(n_classes, args.parts, n_classes, dtype=torch.float)
     estimatedDistribution = None
     if args.per_ex_stats:
         estimatedDistribution = torch.zeros(len(train_loader)*args.batch_size, args.parts, n_classes, dtype=torch.float)
-else:
-    exit(1)
 
-optimizer = None
-lr = args.lr
+    
+    print('CREATING A MODEL...')
+    model = SeqModel(ninp = input_channels,
+                     nhid = args.nhid,
+                     nout = n_classes,
+                     wnorm = args.wnorm,
+                     n_timesteps = seq_length, 
+                     parts = args.parts) 
+    model.to(device_1)
+    print('Model: ', model)
 
-model = SeqModel(ninp = input_channels,
-                    nhid = args.nhid,
-                    nout = n_classes,
-                    wnorm = args.wnorm,
-                    n_timesteps = seq_length, 
-                    parts = args.parts)
+    # if len(args.load) > 0:
+    #     print('LOADING THE MODEL...')
+    #     model_ckp = torch.load(args.load)
+    #     model.load_state_dict(model_ckp['state_dict'])
+    #     print('best acc of loaded model: ',model_ckp['best_acc'])
 
-if len(args.load) > 0:
-    model_ckp = torch.load(args.load)
-    model.load_state_dict(model_ckp['state_dict'])
-    print('best acc of loaded model: ',model_ckp['best_acc1'])
-
-print('Model: ', model)
-if args.cuda:
-    model.cuda()
-
-if optimizer is None:
-    optimizer = getattr(optim, args.optim)(model.parameters(), lr=lr, weight_decay=args.wdecay)
-    if args.optim == 'SGD':
-        optimizer = getattr(optim, args.optim)(model.parameters(), lr=lr, momentum=0.9, weight_decay=args.wdecay)
-        
-
-all_test_losses = []
-epochs = args.epochs
-
-best_acc1 = 0.0
-best_val_loss = None
-first_update = False
-named_params = get_stats_named_params(model)
-
-for epoch in range(1, epochs + 1):  
-    if args.dataset in ['SHD']:
-        if args.per_ex_stats and epoch%5 == 1 :
-            first_update = update_prob_estimates( model, args, train_loader, estimatedDistribution, estimate_class_distribution, first_update )
-
-        progress_bar = tqdm(total=len(train_loader), desc=f"Epoch {epoch}")
-        train(epoch, args, train_loader, n_classes, model, named_params, k, progress_bar)  
-        progress_bar.close()
-        #train_oracle(epoch)
-
-        reset_named_params(named_params, args)
-
-        test_loss, acc1 = test(model, train_loader)
-        print('Model loss:', test_loss)
-        print('Accuracy:', acc1)
-      
-        if epoch in args.when :
-            # Scheduled learning rate decay
-            lr *= 0.1
-            for param_group in optimizer.param_groups:
-                param_group['lr'] = lr
-        
+    
+    optimizer = None
+    if optimizer is None:
+        optimizer = getattr(optim, args.optim)(model.parameters(), lr=args.lr, weight_decay=args.wdecay)
+        if args.optim == 'SGD':
+            optimizer = getattr(optim, args.optim)(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wdecay)
             
-        # remember best acc@1 and save checkpoint
-        is_best = acc1 > best_acc1
-        best_acc1 = max(acc1, best_acc1)
+    
+    all_test_losses = []
+    epochs = args.epochs
+    best_acc = 0.0
+    lr = args.lr
+    steps = 0
+    first_update = False
+    named_params = get_stats_named_params(model)
+    
+    for epoch in range(1, epochs + 1):  
+        if args.dataset in ['SHD']:
+            if args.per_ex_stats and epoch%5 == 1 :
+                first_update = update_prob_estimates( model, args, train_loader, estimatedDistribution, estimate_class_distribution, first_update )
+    
+            progress_bar = tqdm(total=len(train_loader), desc=f"Epoch {epoch}")
+            k = 1
+            train(epoch, args, train_loader, n_classes, model, named_params, k, progress_bar)  
+            progress_bar.close()
+            #train_oracle(epoch)
+    
+            reset_named_params(named_params, args)
+    
+            test_loss, acc = test(model, train_loader)
+            print('Loss:', test_loss, end = '\t')
+            print('Accuracy:', acc.item())
+          
+            if epoch in args.when :
+                # Scheduled learning rate decay
+                lr *= 0.1
+                for param_group in optimizer.param_groups:
+                    param_group['lr'] = lr
             
-        save_checkpoint({
-                'epoch': epoch + 1,
-                'state_dict': model.state_dict(),
-                # 'oracle_state_dict': oracle.state_dict(),
-                'best_acc1': best_acc1,
-                'optimizer' : optimizer.state_dict(),
-                # 'oracle_optimizer' : oracle_optim.state_dict(),
-            }, is_best, prefix=prefix)
- 
-        all_test_losses.append(test_loss)
+                
+            # remember best acc@1 and save checkpoint
+            is_best = acc > best_acc
+            best_acc = max(acc, best_acc)
+                
+            save_checkpoint({
+                    'epoch': epoch + 1,
+                    'state_dict': model.state_dict(),
+                    # 'oracle_state_dict': oracle.state_dict(),
+                    'best_acc': best_acc,
+                    'optimizer' : optimizer.state_dict(),
+                    # 'oracle_optimizer' : oracle_optim.state_dict(),
+                }, is_best, prefix=prefix)
+     
+            all_test_losses.append(test_loss)
+
+if __name__ == "__main__":
+    main()

@@ -18,7 +18,6 @@ from snn_models_LIF4_save4_l2 import *
 if torch.cuda.is_available():
     print('USING CUDA...')
     # torch.backends.cudnn.benchmark = True
-    device_0 = torch.device('cpu')
     device_1 = torch.device('cuda:0')
     device_2 = torch.device('cuda:1')
     # torch.set_default_tensor_type('torch.cuda.FloatTensor')
@@ -57,13 +56,13 @@ def data_mod(X, y, batch_size, step_size, input_size, max_time, shuffle=False):
             coo[2].extend(units)
             coo[1].extend(times)
 
-        i = torch.LongTensor(coo).to(device_0)
-        v = torch.FloatTensor(np.ones(len(coo[0]))).to(device_0)
+        i = torch.LongTensor(coo).to(device_2)
+        v = torch.FloatTensor(np.ones(len(coo[0]))).to(device_2)
 
-        X_batch = torch.sparse.FloatTensor(i, v, torch.Size([batch_size,step_size,input_size])).to(device_0)
-        y_batch = torch.tensor(labels[batch_index], device = device_0)
+        X_batch = torch.sparse.FloatTensor(i, v, torch.Size([batch_size,step_size,input_size])).to(device_2)
+        y_batch = torch.tensor(labels[batch_index], device = device_2)
 
-        mod_data.append((X_batch.to(device_0), y_batch.to(device_0)))
+        mod_data.append((X_batch.to(device_2), y_batch.to(device_2)))
 
         counter += 1
 

@@ -16,12 +16,14 @@ from utils import *
 from snn_models_LIF4_save4_l2 import *
 
 if torch.cuda.is_available():
-    print('Using CUDA...')
-    torch.backends.cudnn.benchmark = True
+    print('USING CUDA...')
+    # torch.backends.cudnn.benchmark = True
     device_0 = torch.device('cpu')
     device_1 = torch.device('cuda:0')
     device_2 = torch.device('cuda:1')
-    torch.set_default_tensor_type('torch.cuda.FloatTensor')
+    # torch.set_default_tensor_type('torch.cuda.FloatTensor')
+else:
+    print('Use a device with CUDA!!')
 
 def data_mod(X, y, batch_size, step_size, input_size, max_time, shuffle=False):
     '''
@@ -308,19 +310,8 @@ def main():
     if args.per_ex_stats: exp_name += '-per-ex-stats-'    
     print('args.per_ex_stats: ', args.per_ex_stats)
     prefix = args.save + exp_name
-
-    # if torch.cuda.is_available():
-    #     print('Using CUDA...')
-    #     torch.backends.cudnn.benchmark = True
-    #     device_0 = torch.device('cpu')
-    #     device_1 = torch.device('cuda:0')
-    #     device_2 = torch.device('cuda:1')
-    #     torch.set_default_tensor_type('torch.cuda.FloatTensor')
     torch.cuda.manual_seed(args.seed)
-    # else:
-    #     print('Use to CUDA device to avoid errors.')
 
-    
     print('PREPROCESSING DATA...')
     train_loader, test_loader, seq_length, input_channels, n_classes = data_generator(args.dataset, batch_size = args.batch_size, datapath = args.datapath, shuffle = (not args.per_ex_stats))
     estimate_class_distribution = torch.zeros(n_classes, args.parts, n_classes, dtype=torch.float)

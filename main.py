@@ -251,7 +251,7 @@ def train(epoch, args, train_loader, n_classes, model, named_params, k, progress
                 clf_loss = clf_loss.mean()
                 # clf_loss = (p+1)/(_PARTS)*F.cross_entropy(output, target)
                 
-                oracle_loss = (1-(p+1)/(_PARTS)) * 1.0 * torch.mean( -oracle_prob * output.cpu())
+                oracle_loss = (1-(p+1)/(_PARTS)) * 1.0 * torch.mean( -oracle_prob.cpu() * output.cpu())
                     
                 regularizer = get_regularizer_named_params(named_params, args) 
                 # if p>600:     

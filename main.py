@@ -112,11 +112,10 @@ def get_regularizer_named_params( named_params, args):
     rho = args.rho
     _lambda = args.lmda 
     regularization = torch.zeros([])
-    named_params.cpu()
     for name in named_params:
         param, sm, lm, dm = named_params[name]
-        regularization += (rho-1.) * torch.sum( param * lm )
-        r_p = _lambda * 0.5 * alpha * torch.sum( torch.square(param - sm) )
+        regularization += (rho-1.) * torch.sum( param * lm ).cpu()
+        r_p = _lambda * 0.5 * alpha * torch.sum( torch.square(param - sm) ).cpu()
         regularization += r_p
     return regularization 
 

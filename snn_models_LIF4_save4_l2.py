@@ -203,8 +203,6 @@ class SNN(nn.Module):
     def __init__(self, input_size, hidden_size,output_size, n_timesteps, P):
         super(SNN, self).__init__()
         
-        print('SNN-lc ', P)
-        
         self.P = P
         self.step = n_timesteps // self.P
         

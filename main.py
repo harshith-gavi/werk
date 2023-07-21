@@ -157,6 +157,7 @@ def train(epoch, args, train_loader, n_classes, model, named_params, k, progress
     global steps
     global estimate_class_distribution
     global optimizer
+    global seq_length
 
     # estimate_class_distribution.to(device_1)
     batch_size = args.batch_size
@@ -278,6 +279,7 @@ def train(epoch, args, train_loader, n_classes, model, named_params, k, progress
         progress_bar.update(1)
 
 def main():
+    global estimate_class_distribution, optimizer, steps, seq_length
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--dataset', type=str, default='SHD', help='Dataset')
@@ -316,7 +318,6 @@ def main():
 
     print('PREPROCESSING DATA...')
     train_loader, test_loader, seq_length, input_channels, n_classes = data_generator(args.dataset, batch_size = args.batch_size, datapath = args.datapath, shuffle = (not args.per_ex_stats))
-    global estimate_class_distribution
     estimate_class_distribution = torch.zeros(n_classes, args.parts, n_classes, dtype=torch.float)
     estimatedDistribution = None
     if args.per_ex_stats:
@@ -339,7 +340,6 @@ def main():
     #     model.load_state_dict(model_ckp['state_dict'])
     #     print('best acc of loaded model: ',model_ckp['best_acc'])
 
-    global optimizer, steps
     optimizer = None
     if optimizer is None:
         optimizer = getattr(optim, args.optim)(model.parameters(), lr=args.lr, weight_decay=args.wdecay)

@@ -156,7 +156,8 @@ def test(model, test_loader):
 def train(epoch, args, train_loader, n_classes, model, named_params, k, progress_bar):
     global steps
     global estimate_class_distribution
-    
+
+    estimate_class_distribution.to(device_1)
     batch_size = args.batch_size
     alpha = args.alpha
     beta = args.beta
